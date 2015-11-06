@@ -78,17 +78,16 @@ class Polynomial:
                 sign = "+"
                 value = i[0]
             if i[1] == 0:
-                expression.append(" {0} {1}".format(sign, value))
+                expression.append(" {0} {1:g}".format(sign, value))
             elif i[0] == 1 and i[1] == 1:
                 expression.append(" {0} x".format(sign))
             elif i[0] == 1:
                 expression.append(" {0} x^{1}".format(sign, i[1]))
             elif i[1] == 1:
-                expression.append(" {0} {1}x".format(sign, value))
+                expression.append(" {0} {1:g}x".format(sign, value))
             else:
-                expression.append(" {0} {1}x^{2}".format(sign, value, i[1]))
-        expression[0] = expression[0].lstrip(" +")
-        return "".join(expression)
+                expression.append(" {0} {1:g}x^{2}".format(sign, value, i[1]))
+        return "".join(expression).lstrip(" +")
     
     @classmethod
     def _tidy(cls, tuple_data):
@@ -100,6 +99,7 @@ class Polynomial:
             else:
                 data_map[i[1]] = i[0]
         list_data = [(v, k) for k,v in data_map.items()]
+        list_data = list(filter(lambda x:x[0], list_data))
         list_data.sort(key=lambda x:x[1], reverse=True)
         return tuple(list_data)
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     print(b.eval(1))
     print(b.lead_exp())
     print(b.coef(3))
-    c = Polynomial(((3, 1), (1, 0)))
+    c = Polynomial(((2, 2), (1.2, 0)))
     print(c)
     d = b + c
     print(d)
