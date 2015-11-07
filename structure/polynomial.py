@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 # -*- coding: UTF-8 -*-
+import decimal
 
 class Polynomial:
     """多项式数据类型"""
@@ -14,9 +15,11 @@ class Polynomial:
         elif type(t_list) is list:
             self._poly = self._tidy(t_list)
         elif type(t_list) is int:
-            self._poly = ((t_list, 0), )
+            self._poly = ((decimal.Decimal(str(t_list)), 0), )
         elif type(t_list) is float:
-            self._poly = ((t_list, 0), )
+            self._poly = ((decimal.Decimal(str(t_list)), 0), )
+        elif type(t_list) is str:
+            self._poly = self._parse(t_list)
         else:
             self._poly = ((0, 0), )
         
@@ -35,6 +38,13 @@ class Polynomial:
     def eval(self, x):
         """计算多项式的值"""
         return sum([i[0] * (x ** i[1]) for i in self._poly])
+    
+    def __neg__(self):
+        """计算负数"""
+        result = []
+        for i in self._poly:
+            result.append((-i[0], i[1]))
+        return Polynomial(result)
     
     def __add__(self, other):
         """计算与other的和"""
@@ -59,6 +69,10 @@ class Polynomial:
                 j += 1
         return Polynomial(result)
     
+    def __sub__(self, other):
+        """计算与other的差"""
+        return self + (-other)
+    
     def __mul__(self, other):
         """计算与other的乘积"""
         result = []
@@ -66,6 +80,32 @@ class Polynomial:
             for j in other._poly:
                 result.append((i[0]*j[0], i[1]+j[1]))
         return Polynomial(result)
+    
+    def __floordiv__(self, other):
+        """计算与other的商"""
+        result = []
+        poly = []
+        for i in range(self.lead_exp()+1):
+            poly.append(self.coef(i))
+        i, j = len(poly) - 1, 0
+        while True:
+            if i < other._poly[j][1]:
+                break
+            c = (poly[i] / other._poly[j][0], i - other._poly[j][1])
+            result.append(c)
+            for x in other._poly:
+                poly[x[1] + c[1]] -= x[0] * c[0]
+            i -= 1
+        return Polynomial(result)
+    
+    def __mod__(self, other):
+        """计算与other的余数"""
+        p = self // other
+        return self - p * other
+    
+    def __eq__(self, other):
+        """判断与other相等"""
+        return self._poly == other._poly
     
     def __repr__(self):
         """打印"""
@@ -77,6 +117,8 @@ class Polynomial:
             else:
                 sign = "+"
                 value = i[0]
+            if int(value) == value:
+                value = int(value)
             if i[1] == 0:
                 expression.append(" {0} {1:g}".format(sign, value))
             elif i[0] == 1 and i[1] == 1:
@@ -95,28 +137,42 @@ class Polynomial:
         data_map = {}
         for i in tuple_data:
             if i[1] in data_map:
-                data_map[i[1]] += i[0]
+                data_map[i[1]] += decimal.Decimal(str(i[0]))
             else:
-                data_map[i[1]] = i[0]
+                data_map[i[1]] = decimal.Decimal(str(i[0]))
         list_data = [(v, k) for k,v in data_map.items()]
         list_data = list(filter(lambda x:x[0], list_data))
+        if not list_data:
+            list_data = [(0, 0)]
         list_data.sort(key=lambda x:x[1], reverse=True)
         return tuple(list_data)
+    
+    @classmethod
+    def _parse(cls, str_data):
+        """从字符串parse多项式，以a1x^e1+a2x^e2+...+anx^en的形式"""
+        pass
 
 if __name__ == "__main__":
     a = Polynomial()
-    print(a)
+    assert str(a) == '0'
     b = Polynomial(((1, 2), (-3, 2), (1, 3), (1, 0)))
-    print(b)
-    print(b.eval(1))
-    print(b.lead_exp())
-    print(b.coef(3))
+    assert str(b) == 'x^3 - 2x^2 + 1'
+    assert b.eval(1) == 0
+    assert b.coef(3) == 1
+    assert b.lead_exp() == 3
     c = Polynomial(((2, 2), (1.2, 0)))
-    print(c)
     d = b + c
-    print(d)
+    assert str(d) == 'x^3 + 2.2'
     e = b * c
-    print(e)
-    print(e.eval(1))
-    print(e.lead_exp())
-    print(e.coef(3))
+    assert str(e) ==  '2x^5 - 4x^4 + 1.2x^3 - 0.4x^2 + 1.2'
+    f = d - c
+    assert str(f) == 'x^3 - 2x^2 + 1'
+    assert b == f
+    g = -c
+    assert str(g) == '- 2x^2 - 1.2'
+    h = e // c
+    assert b == h
+    i = e % c
+    assert i == a
+    j = b - h
+    assert j == a
