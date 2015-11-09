@@ -150,7 +150,50 @@ class Polynomial:
     @classmethod
     def _parse(cls, str_data):
         """从字符串parse多项式，以a1x^e1+a2x^e2+...+anx^en的形式"""
-        pass
+        result = []
+        sign = 1
+        value, exp = '', ''
+        status = 0  # 0,outside; 1,sign; 2,value; 3,x; 4,exp;
+        for x in str_data:
+            if x in '+-':
+                if status == 3 or status == 4:
+                    if value == '':
+                        value = 1
+                    else:
+                        value = sign * decimal.Decimal(value)
+                    if exp == '':
+                        exp = 1
+                    else:
+                        exp = int(exp)
+                    result.append((value, exp))
+                    value, exp = '', ''
+                if x == '+':
+                    sign = 1
+                else:
+                    sign = -1
+                status = 1
+            elif x in '0123456789.':
+                if status == 0 or status == 1 or status == 2:
+                    value += x
+                    status = 2
+                else: # status == 3 or status == 4
+                    exp += x
+                    status = 4
+            elif x in 'x^':
+                status = 3
+        if status == 2:
+            result.append((sign * decimal.Decimal(value), 0))
+        else:
+            if value == '':
+                value = 1
+            else:
+                value = sign * decimal.Decimal(value)
+            if exp == '':
+                exp = 1
+            else:
+                exp = int(exp)
+            result.append((value, exp))
+        return tuple(result)
 
 if __name__ == "__main__":
     a = Polynomial()
@@ -176,3 +219,7 @@ if __name__ == "__main__":
     assert i == a
     j = b - h
     assert j == a
+    k = Polynomial(str(e))
+    assert k == e
+    l = Polynomial('  -3.2 x^7-1.52 x^ 3  + 2  x  ^2 - 5x')
+    assert str(l) == '- 3.2x^7 - 1.52x^3 + 2x^2 - 5x'
