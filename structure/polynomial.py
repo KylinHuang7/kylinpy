@@ -10,21 +10,24 @@ class Polynomial:
         
         传入的参数t_list的每一项是一个二元组(a,e)，代表了ax^e，e是整数。
         """
-        if type(t_list) is tuple:
-            self._poly = self._tidy(t_list)
-        elif type(t_list) is list:
-            self._poly = self._tidy(t_list)
-        elif type(t_list) is int:
-            self._poly = ((decimal.Decimal(str(t_list)), 0), )
-        elif type(t_list) is float:
-            self._poly = ((decimal.Decimal(str(t_list)), 0), )
-        elif type(t_list) is str:
-            self._poly = self._parse(t_list)
-        else:
-            self._poly = ((0, 0), )
+        try:
+            if type(t_list) is tuple or type(t_list) is list:
+                self._poly = self._tidy(t_list)
+            elif type(t_list) is int or type(t_list) is float:
+                self._poly = ((decimal.Decimal(str(t_list)), 0), )
+            elif type(t_list) is decimal.Decimal:
+                self._poly = ((t_list, 0), )
+            elif type(t_list) is str:
+                self._poly = self._parse(t_list)
+            else:
+                self._poly = ((0, 0), )
+        except:
+            raise ValueError("invalid parameter for Polynomial(): '{0}'".format(t_list)) from None
         
     def coef(self, e):
         """返回e的系数"""
+        if type(e) is not int:
+            raise TypeError("invalid parameter for coef(): '{0}'".format(e))
         target = list(filter(lambda x: x[1] == e, self._poly))
         if target:
             return target[0][0]
@@ -37,6 +40,8 @@ class Polynomial:
     
     def eval(self, x):
         """计算多项式的值"""
+        if type(x) is not int and type(x) is not float and type(x) is not decimal.Decimal:
+            raise TypeError("invalid parameter for eval(): '{0}'".format(x))
         return sum([i[0] * (x ** i[1]) for i in self._poly])
     
     def __neg__(self):
@@ -48,6 +53,8 @@ class Polynomial:
     
     def __add__(self, other):
         """计算与other的和"""
+        if type(other) is not Polynomial:
+            raise TypeError("unsupported operand type(s) for +: 'Polynomial' and '{0}'".format(type(other)))
         result = []
         i, j = 0, 0
         while True:
@@ -71,10 +78,14 @@ class Polynomial:
     
     def __sub__(self, other):
         """计算与other的差"""
+        if type(other) is not Polynomial:
+            raise TypeError("unsupported operand type(s) for -: 'Polynomial' and '{0}'".format(type(other)))
         return self + (-other)
     
     def __mul__(self, other):
         """计算与other的乘积"""
+        if type(other) is not Polynomial:
+            raise TypeError("unsupported operand type(s) for *: 'Polynomial' and '{0}'".format(type(other)))
         result = []
         for i in self._poly:
             for j in other._poly:
@@ -83,6 +94,8 @@ class Polynomial:
     
     def __floordiv__(self, other):
         """计算与other的商"""
+        if type(other) is not Polynomial:
+            raise TypeError("unsupported operand type(s) for //: 'Polynomial' and '{0}'".format(type(other)))
         result = []
         poly = []
         for i in range(self.lead_exp()+1):
@@ -100,11 +113,15 @@ class Polynomial:
     
     def __mod__(self, other):
         """计算与other的余数"""
+        if type(other) is not Polynomial:
+            raise TypeError("unsupported operand type(s) for %: 'Polynomial' and '{0}'".format(type(other)))
         p = self // other
         return self - p * other
     
     def __eq__(self, other):
         """判断与other相等"""
+        if type(other) is not Polynomial:
+            raise TypeError("unsupported operand type(s) for ==: 'Polynomial' and '{0}'".format(type(other)))
         return self._poly == other._poly
     
     def __repr__(self):
@@ -117,18 +134,19 @@ class Polynomial:
             else:
                 sign = "+"
                 value = i[0]
-            if int(value) == value:
-                value = int(value)
+            value = "{0:g}".format(value).rstrip(".0")
+            if value == '':
+                value = '0'
             if i[1] == 0:
-                expression.append(" {0} {1:g}".format(sign, value))
+                expression.append(" {0} {1}".format(sign, value))
             elif i[0] == 1 and i[1] == 1:
                 expression.append(" {0} x".format(sign))
             elif i[0] == 1:
                 expression.append(" {0} x^{1}".format(sign, i[1]))
             elif i[1] == 1:
-                expression.append(" {0} {1:g}x".format(sign, value))
+                expression.append(" {0} {1}x".format(sign, value))
             else:
-                expression.append(" {0} {1:g}x^{2}".format(sign, value, i[1]))
+                expression.append(" {0} {1}x^{2}".format(sign, value, i[1]))
         return "".join(expression).lstrip(" +")
     
     @classmethod
@@ -181,6 +199,10 @@ class Polynomial:
                     status = 4
             elif x in 'x^':
                 status = 3
+            elif x in ' ':
+                pass
+            else:
+                raise TypeError("invalid character '{0}'".format(x))
         if status == 2:
             result.append((sign * decimal.Decimal(value), 0))
         else:
@@ -223,3 +245,7 @@ if __name__ == "__main__":
     assert k == e
     l = Polynomial('  -3.2 x^7-1.52 x^ 3  + 2  x  ^2 - 5x')
     assert str(l) == '- 3.2x^7 - 1.52x^3 + 2x^2 - 5x'
+    m = b // c
+    assert str(m) == '0.5x - 1'
+    n = b % c
+    assert str(n) == '- 0.6x + 2.2'
